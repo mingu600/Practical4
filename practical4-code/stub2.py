@@ -15,7 +15,7 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
-        self.Q = np.random.rand(8,2)
+        self.Q = np.random.rand(40,2)
         self.alpha = 0.5
         self.gamma = 0.1
         self.flag = 0
@@ -27,19 +27,25 @@ class Learner(object):
         self.last_reward = None
 
     def find_index(self, state):
-        state_data = [state['monkey']['top'], state['tree']['top'], self.gravity]
+        state_data = [self.gravity, state['monkey']['top'], state['tree']['top'], state['monkey']['bot'], state['tree']['bot']]
         
-        diff = state_data[0] - state_data[1]
-        if diff > -70:
+        buffer = (state_data[2] - state_data[4])/2
+        
+        if state_data[1] - state_data[2] > -buffer:
             m = 0
-        elif diff < -130:
+        elif state_data[3] - state_data[4] < buffer:
             m = 1
-        elif diff < -100:
+        elif (state_data[1] + state_data[3])/2 - (state_data[2] + state_data[4])/2 > 0:
             m = 2
         else:
             m = 3
         
-        index = int(4 * math.floor((-1 * state_data[2]) / 4) + m)
+        g = state_data[0]
+        n = math.floor(-g/2)
+        if n > 9:
+            n = 9
+        
+        index = int(n + m)
         
         #index = int(18 * math.floor((-1 * state_data[2]) / 4) + 1 * math.floor((state_data[1] - state_data[0] + 200)/30))
         #index = int(100 * math.floor((-1 * state_data[4]) / 4) + 20 * math.floor((state_data[0] - 240) / 40) + 10 * math.floor((state_data[1] + 40) / 40)
@@ -124,7 +130,7 @@ if __name__ == '__main__':
 	hist = []
 
 	# Run games.
-	run_games(agent, hist, 100, 1)
+	run_games(agent, hist, 20, 1)
 
 	# Save history.
 	np.save('hist',np.array(hist))
