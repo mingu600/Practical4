@@ -15,7 +15,7 @@ class Learner(object):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
-        self.Q = np.random.rand(40,2)
+        self.Q = np.random.rand(400,2)
         self.alpha = 0.5
         self.gamma = 0.5
         self.flag = 0
@@ -30,9 +30,25 @@ class Learner(object):
         self.last_reward = None
 
     def find_index(self, state):
-        total = self.Q.shape[0]
-        state_data = [self.gravity, state['monkey']['top'], state['tree']['top'], state['monkey']['bot'], state['tree']['bot'], state['tree']['dist']]
-        monkey_pos = (state_data[1] + state_data[3])/2
+        # total = self.Q.shape[0]
+        # state_data = [self.gravity, state['monkey']['top'], state['tree']['top'], state['monkey']['bot'], state['tree']['bot'], state['tree']['dist']]
+        # monkey_pos = (state_data[1] + state_data[3])/2
+        #
+        # if monkey_pos - state_data[2] > - 1.25 * self.tree_gap / 2.0:
+        #     m = 0
+        # elif monkey_pos - state_data[2] > - 2 * self.tree_gap / 2.0:
+        #     m = 1
+        # else:
+        #     m = 2
+        # g = state_data[0]
+        # n = math.floor(-g/2)
+        # if n > 9:
+        #     n = 9
+        #
+        # index = int(n + 10 * m)
+
+        state_data = [self.gravity, state['monkey']['top'], state['tree']['top'], state['monkey']['bot'], state['tree']['bot'], state['tree']['dist'],state['monkey']['vel']]
+        monkey_pos = (state_data[1] + state_data[3]) / 2.0
 
         if monkey_pos - state_data[2] > - 1.25 * self.tree_gap / 2.0:
             m = 0
@@ -40,12 +56,11 @@ class Learner(object):
             m = 1
         else:
             m = 2
-        g = state_data[0]
-        n = math.floor(-g/2)
-        if n > 9:
-            n = 9
-
-        index = int(n + 10 * m)
+        # 2 bins
+        d = math.floor(state_data[5] / 200.0)
+        # 2 bins
+        g = math.floor(-self.gravity / 2.0)
+        index = int(100 * g + 10 * d + m)
 
         #index = int(18 * math.floor((-1 * state_data[2]) / 4) + 1 * math.floor((state_data[1] - state_data[0] + 200)/30))
         #index = int(100 * math.floor((-1 * state_data[4]) / 4) + 20 * math.floor((state_data[0] - 240) / 40) + 10 * math.floor((state_data[1] + 40) / 40)
@@ -93,7 +108,6 @@ class Learner(object):
         #print [self.Q[index][0], self.Q[index][1]]
         self.time += 0.1
         self.epsilon = 1 / self.time
-
         return self.last_action
 
     def reward_callback(self, reward):
@@ -125,6 +139,7 @@ def run_games(learner, hist, iters = 100, t_len = 100):
         learner.reset()
     print max(hist)
     print float(sum(hist))/len(hist)
+    print hist
     return
 
 

@@ -100,6 +100,7 @@ class SwingyMonkey:
 
         # Find the next closest tree.
         for tree in self.trees:
+            next_tree = tree.copy()
             if tree['x']+290 > self.monkey_left:
                 next_tree = tree.copy()
                 break
