@@ -2,6 +2,7 @@
 import numpy as np
 import numpy.random as npr
 import math
+import random
 
 from SwingyMonkey import SwingyMonkey
 
@@ -20,6 +21,8 @@ class Learner(object):
         self.gamma = 0.2
         self.flag = 0
         self.gravity = 1
+        self.time = 100000000
+        self.epsilon = 1 / (self.time)
 
     def reset(self):
         self.last_state  = None
@@ -50,13 +53,18 @@ class Learner(object):
             return 0
         if self.flag == 2:
             self.gravity = state['monkey']['vel']
+        #if self.epsilon < random.random():
         index = self.find_index(state)
         old_action = self.Q[self.find_index(self.last_state)][self.last_action]
         #print old_action
         self.Q[index] = old_action + self.alpha * (self.last_reward + self.gamma * np.argmax(self.Q[index]) - old_action)
         self.last_action = np.argmax(self.Q[index])
+        # else:
+        #     self.last_action = random.randrange(0, 2)
         self.last_state  = new_state
         #print [self.Q[index][0], self.Q[index][1]]
+        self.time += 0.1
+        self.epsilon = 1 / self.time
         return self.last_action
 
     def reward_callback(self, reward):

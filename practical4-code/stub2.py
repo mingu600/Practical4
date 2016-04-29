@@ -17,9 +17,12 @@ class Learner(object):
         self.last_reward = None
         self.Q = np.random.rand(40,2)
         self.alpha = 0.5
-        self.gamma = 0.1
+        self.gamma = 0.5
         self.flag = 0
         self.gravity = 1
+        self.time = 5
+        self.tree_gap = 0
+        self.epsilon = 1 / (self.time)
 
     def reset(self):
         self.last_state  = None
@@ -27,29 +30,26 @@ class Learner(object):
         self.last_reward = None
 
     def find_index(self, state):
-        state_data = [self.gravity, state['monkey']['top'], state['tree']['top'], state['monkey']['bot'], state['tree']['bot']]
-        
-        buffer = (state_data[2] - state_data[4])/2
-        
-        if state_data[1] - state_data[2] > -buffer:
+        total = self.Q.shape[0]
+        state_data = [self.gravity, state['monkey']['top'], state['tree']['top'], state['monkey']['bot'], state['tree']['bot'], state['tree']['dist']]
+        monkey_pos = (state_data[1] + state_data[3])/2
+
+        if monkey_pos - state_data[2] > - 1.25 * self.tree_gap / 2.0:
             m = 0
-        elif state_data[3] - state_data[4] < buffer:
+        elif monkey_pos - state_data[2] > - 2 * self.tree_gap / 2.0:
             m = 1
-        elif (state_data[1] + state_data[3])/2 - (state_data[2] + state_data[4])/2 > 0:
-            m = 2
         else:
-            m = 3
-        
+            m = 2
         g = state_data[0]
         n = math.floor(-g/2)
         if n > 9:
             n = 9
-        
-        index = int(n + m)
-        
+
+        index = int(n + 10 * m)
+
         #index = int(18 * math.floor((-1 * state_data[2]) / 4) + 1 * math.floor((state_data[1] - state_data[0] + 200)/30))
         #index = int(100 * math.floor((-1 * state_data[4]) / 4) + 20 * math.floor((state_data[0] - 240) / 40) + 10 * math.floor((state_data[1] + 40) / 40)
-        
+
         return index
 
     def action_callback(self, state):
@@ -64,7 +64,7 @@ class Learner(object):
         # Return 0 to swing and 1 to jump.
 
         new_state  = state
-        
+
         # Get gravity here
         if self.last_state == None:
             self.flag = 1
@@ -73,21 +73,27 @@ class Learner(object):
             return 0
         if self.flag == 1:
             self.gravity = state['monkey']['vel']
+            self.tree_gap = state['tree']['top'] - state['tree']['bot']
             self.flag = 0
-        index = self.find_index(state)
-        
-        old_action = self.Q[self.find_index(self.last_state)][self.last_action]
-        #print self.find_index(self.last_state) ,self.last_action
-        
-        #changed from self.Q[index] = ...
-        #also debugged equation -- need to double-check
-        self.Q[self.find_index(self.last_state)][self.last_action] = old_action + self.alpha * (self.last_reward + self.gamma * np.argmax(self.Q[index]) - old_action)
-        
-        self.last_action = np.argmax(self.Q[index])
+
+        if np.random.random_sample() > self.epsilon:
+            index = self.find_index(state)
+
+            old_action = self.Q[self.find_index(self.last_state)][self.last_action]
+            #print self.find_index(self.last_state) ,self.last_action
+
+            #changed from self.Q[index] = ...
+            #also debugged equation -- need to double-check
+            self.Q[self.find_index(self.last_state)][self.last_action] = old_action + self.alpha * (self.last_reward + self.gamma * np.argmax(self.Q[index]) - old_action)
+            self.last_action = np.argmax(self.Q[index])
+        else:
+            self.last_action = np.random.randint(0, 2)
         #print self.last_action
         self.last_state  = new_state
         #print [self.Q[index][0], self.Q[index][1]]
-        
+        self.time += 0.1
+        self.epsilon = 1 / self.time
+
         return self.last_action
 
     def reward_callback(self, reward):
@@ -118,6 +124,7 @@ def run_games(learner, hist, iters = 100, t_len = 100):
         # Reset the state of the learner.
         learner.reset()
     print max(hist)
+    print float(sum(hist))/len(hist)
     return
 
 
@@ -130,7 +137,6 @@ if __name__ == '__main__':
 	hist = []
 
 	# Run games.
-	run_games(agent, hist, 20, 1)
-
+	run_games(agent, hist, 100, 1)
 	# Save history.
 	np.save('hist',np.array(hist))
